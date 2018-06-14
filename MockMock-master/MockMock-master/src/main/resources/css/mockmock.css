@@ -1,0 +1,11 @@
+body {
+    padding-top: 60px;
+}
+
+small.deleteLink {
+    font-size: 12px;
+}
+
+div[name=bodyPlainText] div.well, div[name=rawOutput] div.well, div[name=bodyHTML_Unformatted] div.well {
+    white-space: pre-line;
+}
