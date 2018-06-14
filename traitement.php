@@ -132,6 +132,7 @@ function parseCSVAwin($csvfile)
 
     //On supprime la première ligne du csv qui était la description des champs
     unset($voucherList[0]);
+    unset($voucherList[count($voucherList)]);
 
     return $voucherList;
 }
@@ -286,7 +287,7 @@ foreach ($voucherList as $voucher) {
 if (sendmail($email, $voucherTest)) {
     echo "Ouiiiiii :)";
 } else {
-    echo "Noooooon :(";
+    echo "NooOoooon :(";
 }
 ?>
 
