@@ -1,6 +1,12 @@
 <?php
 
 /**
+ * ---------------------------------------------------------------------------------------------------------------------
+ *                                                FONCTIONS UTILES
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+
+/**
  * @brief parse un lien de tradedoubler et retourne un tableaux de marchands avec uniquement les données nécessaires
  *
  * @param $xmlFile : URL à parser
@@ -80,6 +86,8 @@ function parseCSVAwin($csvfile)
 {
 
     /**
+     * Les informations sont distribuées de cette manière dans le csv :
+     *
      * 0 Promotion ID
      * 1 Advertiser
      * 2 Advertiser ID
@@ -102,6 +110,7 @@ function parseCSVAwin($csvfile)
 
     $voucherList = [];
 
+    //TODO : Il doit y avoir plus optimisé tout que cela
     $data = file_get_contents($csvfile);
     $rows = explode("\n", $data);
     foreach ($rows as $rowRAW) {
@@ -136,7 +145,7 @@ function parseCSVAwin($csvfile)
  */
 function ifExist($tab, $index)
 {
-    return count($tab) > $index ? $tab[$index] : "ERROR";
+    return count($tab) > $index ? $tab[$index] : "Paramètre Absent";
 }
 
 
@@ -223,6 +232,7 @@ $voucherTest = new Voucher();
 <?php
 foreach ($voucherList as $voucher) {
 
+    //Pour des raisons de généricité et pour les tests, c'est le seul moyen de prendre le début du tableau
     if ($i == 0) {
         $voucherTest = $voucher;
     }
@@ -264,16 +274,6 @@ foreach ($voucherList as $voucher) {
         </tr>
     </table>
     <?php
-    /*
-        echo $voucher->title . ", ";
-        echo $voucher->voucher . ", ";
-        echo $voucher->exclusive . ", ";
-        echo $voucher->description . ", ";
-        echo $voucher->code . ", ";
-        echo $voucher->startDate . ", ";
-        echo $voucher->endDate . ", ";
-        echo $voucher->landingUrl . "</br>" . "</br>";
-    */
     $i++;
 }
 
@@ -282,6 +282,7 @@ foreach ($voucherList as $voucher) {
 </html>
 <?php
 
+// TODO : Ne fonctionne pas
 if (sendmail($email, $voucherTest)) {
     echo "Ouiiiiii :)";
 } else {
