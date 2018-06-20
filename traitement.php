@@ -123,7 +123,7 @@ function parseCSVAwin($csvfile)
         $id = '2' . ifExist($row, 0);
 
         if (!isAlreadyinDB($id)) {
-            $voucherJson->id =$id;
+            $voucherJson->id = $id;
             $voucherJson->title = ifExist($row, 17); //title
             $voucherJson->voucher = ifExist($row, 1); //Advertiser
             $voucherJson->exclusive = ifExist($row, 15); //Exclusive
@@ -187,7 +187,9 @@ function sendmail($to, $voucher)
     $message .= "</table>";
     $message .= "</body></html>";
 
-    return mail($to, $subject, $message, $headers);
+    return $message;
+
+    //return mail($to, $subject, $message, $headers);
 }
 
 function isAlreadyinDB($id)
@@ -250,7 +252,6 @@ $QUERY_AFFILI = "https://modules.affili.net";
 $email = $_POST['email'];
 $url = $_POST['url'];
 
-
 /**
  * Suivant le site donné en paramètre, on effectue un parsage différent
  */
@@ -270,50 +271,8 @@ $voucherTest = new Voucher();
 
 insertVoucherListInDB($voucherList);
 
-?>
-<html>
-<body>
-<?php
-foreach ($voucherList as $voucher) : ?>
-    <table rules="all" style="border-color: #666;" cellpadding="10">
-        <tr>
-            <td><strong>id</strong></td>
-            <td><?= $voucher->id ?></td>
-        </tr>
-        <tr style='background: #eef;'>
-            <td><strong>Titre</strong></td>
-            <td><?= $voucher->title ?> </td>
-        </tr>
-        <tr style='background: #eee;'>
-            <td><strong>Marchand</strong></td>
-            <td><?= $voucher->voucher ?> </td>
-        </tr>
-        <tr>
-            <td><strong>Exclusif</strong></td>
-            <td><?= $voucher->exclusive ?></td>
-        </tr>
-        <tr>
-            <td><strong>Description</strong></td>
-            <td><?= $voucher->description ?></td>
-        </tr>
-        <tr>
-            <td><strong>Code</strong></td>
-            <td><?= $voucher->code ?></td>
-        </tr>
-        <tr>
-            <td><strong>Date début</strong></td>
-            <td><?= $voucher->startDate ?></td>
-        </tr>
-        <tr>
-            <td><strong>Date fin</strong></td>
-            <td><?= $voucher->endDate ?></td>
-        </tr>
-        <tr>
-            <td><strong>Lien</strong></td>
-            <td><?= $voucher->landingUrl ?></td>
-        </tr>
-    </table>
-    <?php endforeach; ?>
-</body>
-</html>
+foreach ($voucherList as $voucher) {
 
+    echo sendmail($email, $voucher);
+}
+?>
