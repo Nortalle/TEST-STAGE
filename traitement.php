@@ -6,6 +6,7 @@
  * ---------------------------------------------------------------------------------------------------------------------
  */
 
+
 /**
  * @brief parse un lien de tradedoubler et retourne un tableaux de marchands avec uniquement les données nécessaires
  *
@@ -23,22 +24,24 @@ function parseXMLTradedoubler($xmlFile)
     foreach ($xml->children() as $voucher) {
 
         $voucherJson = new Voucher();
+        $id = '1' . $voucher->id;
 
-        $voucherJson->title = $voucher->title;
-        $voucherJson->voucher = $voucher->programName;
-        $voucherJson->exclusive = $voucher->exclusive;
-        $voucherJson->description = $voucher->description;
-        $voucherJson->code = $voucher->code;
+        if (!isAlreadyinDB($id)) {
+            $voucherJson->id = $id;
+            $voucherJson->title = $voucher->title;
+            $voucherJson->voucher = $voucher->programName;
+            $voucherJson->exclusive = $voucher->exclusive;
+            $voucherJson->description = $voucher->description;
+            $voucherJson->code = $voucher->code;
 
-        //TODO : Les date-heure ne sont pas justes
-        $voucherJson->startDate = date('d/m/Y H:i:s', floatval($voucher->startDate));
-        $voucherJson->endDate = date('d/m/Y H:i:s', floatval($voucher->endDate));
-        $voucherJson->landingUrl = $voucher->defaultTrackUri;
+            //TODO : Les date-heure ne sont pas justes
+            $voucherJson->startDate = date('d/m/Y H:i:s', floatval($voucher->startDate));
+            $voucherJson->endDate = date('d/m/Y H:i:s', floatval($voucher->endDate));
+            $voucherJson->landingUrl = $voucher->defaultTrackUri;
 
-        $voucherList[] = $voucherJson;
-
+            $voucherList[] = $voucherJson;
+        }
     }
-
     return $voucherList;
 }
 
@@ -112,22 +115,26 @@ function parseCSVAwin($csvfile)
 
     //TODO : Il doit y avoir plus optimisé tout que cela
     $data = file_get_contents($csvfile);
-    $rows = explode("\n", $data);
+    $rows = explode("\"\n", $data);
     foreach ($rows as $rowRAW) {
         $row = str_getcsv($rowRAW);
 
         $voucherJson = new Voucher();
+        $id = '2' . ifExist($row, 0);
 
-        $voucherJson->title = ifExist($row, 17); //title
-        $voucherJson->voucher = ifExist($row, 1); //Advertiser
-        $voucherJson->exclusive = ifExist($row, 15); //Exclusive
-        $voucherJson->description = ifExist($row, 5);// Description
-        $voucherJson->code = ifExist($row, 4); // Code
-        $voucherJson->startDate = ifExist($row, 6); // Starts
-        $voucherJson->endDate = ifExist($row, 7); // ends
-        $voucherJson->landingUrl = ifExist($row, 11); // Deeplink Tracking
+        if (!isAlreadyinDB($id)) {
+            $voucherJson->id =$id;
+            $voucherJson->title = ifExist($row, 17); //title
+            $voucherJson->voucher = ifExist($row, 1); //Advertiser
+            $voucherJson->exclusive = ifExist($row, 15); //Exclusive
+            $voucherJson->description = ifExist($row, 5);// Description
+            $voucherJson->code = ifExist($row, 4); // Code
+            $voucherJson->startDate = ifExist($row, 6); // Starts
+            $voucherJson->endDate = ifExist($row, 7); // ends
+            $voucherJson->landingUrl = ifExist($row, 11); // Deeplink Tracking
 
-        $voucherList[] = $voucherJson;
+            $voucherList[] = $voucherJson;
+        }
     }
 
     //On supprime la première ligne du csv qui était la description des champs
@@ -183,8 +190,44 @@ function sendmail($to, $voucher)
     return mail($to, $subject, $message, $headers);
 }
 
+function isAlreadyinDB($id)
+{
+
+    $host = 'localhost';
+    $dbname = 'test_stage';
+    $bdd = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';', 'root', 'root');
+
+    $reponses = $bdd->prepare('SELECT COUNT(*) FROM vouchers WHERE vouchers.id = ?;');
+    $reponses->execute(array($id));
+    $fetched = $reponses->fetch();
+    return $fetched[0] == 1;
+}
+
+function insertVoucherListInDB($voucherList)
+{
+    $host = 'localhost';
+    $dbname = 'test_stage';
+    $bdd = new PDO('mysql:host=' . $host . ';dbname=' . $dbname . ';', 'root', 'root');
+    foreach ($voucherList as $voucher) {
+
+
+        $requete = $bdd->prepare('INSERT INTO `vouchers` (`id`, `title`, `voucher`, `exclusive`, `description`, `code`, `startDate`, `endDate`, `landingUrl`) VALUES (?,?,?,?,?,?,?,?,?);');
+        $requete->execute(array($voucher->id,
+            $voucher->title,
+            $voucher->voucher,
+            $voucher->exclusive,
+            $voucher->description,
+            $voucher->code,
+            $voucher->startDate,
+            $voucher->endDate,
+            $voucher->landingUrl
+        ));
+    }
+}
+
 class Voucher
 {
+    public $id = "";
     public $title = "";
     public $voucher = "";
     public $exclusive = "";
@@ -200,7 +243,6 @@ class Voucher
  *                                                PROGRAMME PRINCIPAL
  * ---------------------------------------------------------------------------------------------------------------------
  */
-
 $QUERY_AWI = "https://ui.awin.com";
 $QUERY_TRADEDOUBLER = "http://api.tradedoubler.com";
 $QUERY_AFFILI = "https://modules.affili.net";
@@ -224,23 +266,20 @@ if (substr($url, 0, strlen($QUERY_AWI)) === $QUERY_AWI) {
     echo "Vous n'avez pas entrez une url correct";
 }
 
-$i = 0;
 $voucherTest = new Voucher();
+
+insertVoucherListInDB($voucherList);
 
 ?>
 <html>
 <body>
 <?php
-foreach ($voucherList as $voucher) {
-
-    //Pour des raisons de généricité et pour les tests, c'est le seul moyen de prendre le début du tableau
-    if ($i == 0) {
-        $voucherTest = $voucher;
-    }
-
-
-    ?>
+foreach ($voucherList as $voucher) : ?>
     <table rules="all" style="border-color: #666;" cellpadding="10">
+        <tr>
+            <td><strong>id</strong></td>
+            <td><?= $voucher->id ?></td>
+        </tr>
         <tr style='background: #eef;'>
             <td><strong>Titre</strong></td>
             <td><?= $voucher->title ?> </td>
@@ -274,21 +313,7 @@ foreach ($voucherList as $voucher) {
             <td><?= $voucher->landingUrl ?></td>
         </tr>
     </table>
-    <?php
-    $i++;
-}
-
-?>
+    <?php endforeach; ?>
 </body>
 </html>
-<?php
-
-// TODO : Ne fonctionne pas
-if (sendmail($email, $voucherTest)) {
-    echo "Ouiiiiii :)";
-} else {
-    echo "NooOoooon :(";
-}
-?>
-
 
